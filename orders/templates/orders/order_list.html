@@ -5,5 +5,11 @@
 </head>
 <body>
     <h1>Orders</h1>
+{% for order in orders %}
+    <p>{{ order.order_number }}</p>
+    <p>{{ order.order_status }}</p>
+    <p>{{ order.payment_status }}</p>
+    <p>{{ order.customer }}</p>
+{% endfor %}
 </body>
 </html>
