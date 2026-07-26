@@ -1,9 +1,5 @@
 from django.contrib import admin
-from .models import ServiceWindow
-from .models import Customer
-from .models import Order
-from .models import OrderItem
-from .models import MenuItem
+from .models import ServiceWindow, Customer, Order, OrderItem, MenuItem
 
 admin.site.register(ServiceWindow)
 admin.site.register(Customer)

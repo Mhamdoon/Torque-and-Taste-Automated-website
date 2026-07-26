@@ -1,8 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from .models import Order
-
-
+from django.shortcuts import redirect
 def order_list(request):
     queryset = Order.objects.all()
     querysetpending=Order.objects.filter(order_status='pending').count()
@@ -14,3 +13,37 @@ def order_list(request):
     'delivered_count': querysetdelivered_count,})
 #make my queryset available in the template under the name orders
 #Queryset = the result of asking your database a question
+
+
+#def update_order_status(request, order_id):
+#  get the order from database using order_id
+#if request is POST:
+#  get the new status from the form data
+# set order.order_status to new status
+# save the order
+# redirect to order list
+def update_order_status(request,order_id):
+    order=Order.objects.get(id=order_id)
+    if request.method=='POST':
+        new_status = request.POST.get('order_status') #the thing user posts
+        order.order_status = new_status
+        order.save()
+        return redirect('order-list')
+    else:
+       new_status=order.order_status
+       return redirect('order-list')
+#When Django finishes updating the order, 
+# it needs to send the user somewhere. Without a redirect, the page would just be blank after the update.
+#In simple terms — update happens → redirect → user sees the refreshed dashboard with the new status showing.
+
+
+
+
+#full flow is Template renders order.id into the URL → 
+#form action = /order/update/3/ → 
+#user clicks submit → 
+#POST request goes to /order/update/3/ → 
+#Django captures 3 as order_id → 
+#view fetches that order → 
+#updates its status → 
+#redirects back

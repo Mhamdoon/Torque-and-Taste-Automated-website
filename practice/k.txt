@@ -1,0 +1,10 @@
+#from django.db import models
+from django.utils import timezone
+from django.contrib.auth.models import User
+#so that we can import user model which is a default django model and act it as a foreign key for our created post
+class name(models.Model):
+title=models.CharField(max_length=100)
+content=models.TextField()
+date_posted=models.DateTimeField(auto_now_add=True) can be done but it cannot be updated so we use utility of django
+date_posted=models.DateTimeField(default=timezone.now)
+author=models.ForeignKey(User,on_delete=models.CASCADE)
