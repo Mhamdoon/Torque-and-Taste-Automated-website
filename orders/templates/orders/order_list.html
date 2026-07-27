@@ -14,10 +14,34 @@
                 <h1 class="text-2xl font-semibold text-gray-800">Order dashboard</h1>
                 <p class="text-sm text-gray-500 mt-1">Weekend service</p>
             </div>
-            <span class="inline-flex items-center gap-2 bg-green-100 text-green-700 text-sm font-medium px-4 py-1.5 rounded-full">
-                <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                Service open
-            </span>
+            <div class="flex items-center gap-3">
+                <!-- service_window comes from the order_list view's context.
+                     It's either a ServiceWindow object (if one is open) or None.
+                     The if-check below treats None as falsy, so this branches automatically. -->
+                {% if service_window %}
+                    <span class="inline-flex items-center gap-2 bg-green-100 text-green-700 text-sm font-medium px-4 py-1.5 rounded-full">
+                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                        Service open — {{ service_window.date }}
+                    </span>
+                {% else %}
+                    <!-- No open ServiceWindow was found -> service_window is None -> this shows instead -->
+                    <span class="inline-flex items-center gap-2 bg-gray-100 text-gray-600 text-sm font-medium px-4 py-1.5 rounded-full">
+                        <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+                        No service running
+                    </span>
+                {% endif %}
+
+                <!-- This form posts to open_service_window. No order.id needed here since
+                     that view doesn't take a parameter - it just checks the DB itself for
+                     any currently open window and handles close+create logic there. -->
+                <form method="POST" action="{% url 'open-service-window' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="text-sm bg-gray-800 text-white px-4 py-1.5 rounded-lg hover:bg-gray-700 transition-colors">
+                        <!-- Button text also reacts to the same service_window variable -->
+                        {% if service_window %}Start New Service{% else %}Open Service{% endif %}
+                    </button>
+                </form>
+            </div>
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -76,6 +100,10 @@
                             {% endif %}
                         </td>
                         <td class="px-4 py-3">
+                            <!-- This form DOES need order.id, since update_order_status
+                                 needs to know WHICH order to update. Different from the
+                                 service window form above, which acts on the whole table
+                                 rather than one specific row. -->
                             <form method="POST" action="{% url 'update-order-status' order.id %}" class="flex items-center gap-2">
                                 {% csrf_token %}
                                 <select name="order_status" class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100">

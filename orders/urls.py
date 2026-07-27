@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('orderlist/',views.order_list,name='order-list'),
+    path('open-service-window/',views.open_service_window,name='open-service-window'),
     #make blank so that route url is blank which is the basic url
     path('update/<int:order_id>/', views.update_order_status, name='update-order-status')
     #When you click Update on order number 3, the browser needs to send a POST request to a URL that includes the order ID, like this:
