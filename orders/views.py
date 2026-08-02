@@ -83,3 +83,64 @@ def update_order_status(request,order_id):
 #view fetches that order → 
 #updates its status → 
 #redirects back
+
+def confirm_payment(request,order_id):
+   # order_id comes from the URL itself (e.g. /order/confirm-payment/3/)
+    # Django's URL pattern captures it and hands it to this view automatically,
+    # same mechanism you already used in update_order_status.
+   order=Order.objects.get(id=order_id)
+   # Fetches the ONE specific Order this button was clicked for.
+   if request.method=='POST':
+      if order.payment_status=='confirmed':
+      # Update the field on the Order object IN MEMORY first.
+      # Nothing is saved to the database yet at this point.  
+       order.payment_status='not_confirmed'
+       order.order_number = 0
+      else:
+         order.payment_status = 'confirmed'
+         order.order_number=calculate_next_order_number(order.customer.gender,order.service_window)
+             # THIS is the line that actually writes both changes (payment_status
+               # AND order_number) to the PostgreSQL database. Until save() runs,
+               # everything above only existed in Python's memory.
+      order.save()
+      return redirect('order-list')
+   else:
+      return redirect('order-list')
+
+
+ 
+#views job is to calcualte and worry about the service window stuff and gender required . this ones only job is 
+# to calculate the number 
+
+def calculate_next_order_number(gender, service_window):
+ if gender=='male':
+    #checks for last male order by filtering it
+    last_male_order = Order.objects.filter(
+    service_window=service_window,
+    customer__gender='male'
+      ).order_by('-order_number').first()
+    if last_male_order is None:
+       next_number=1
+       #default as 1
+    else:
+       next_number=last_male_order.order_number+1
+       #take attribute of the last male order and add 1 
+       if next_number % 10==9:
+          #if it ends with 9 then skip and add 1 again 
+          next_number+=1
+
+   #The flow in one line: button click → POST request hits this view → 
+   # view fetches the order → calculates the number using data already linked to that order → saves both changes at once → redirects.
+
+ elif gender=='female':
+    last_female_order = Order.objects.filter(
+        service_window=service_window,
+        customer__gender='female'
+          ).order_by('-order_number').first()
+    if last_female_order is None:
+       next_number=9
+    else:
+       next_number=last_female_order.order_number+10
+       #so gives 10 19 29 39 etc
+    
+ return next_number
