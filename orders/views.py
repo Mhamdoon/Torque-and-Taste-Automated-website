@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from .models import Order
 from django.shortcuts import redirect
 from django.utils.timezone import now
+from django.utils.timezone import now, localtime
 from .models import ServiceWindow
 
 def open_service_window(request):
@@ -11,7 +12,7 @@ def open_service_window(request):
     if servicewindowstatuscheck == 0:
      #var to check status 
      Service_Window=ServiceWindow.objects.create(
-     date = now().date(),
+     date =localtime(now()).date(),
      status='open'
      )
      #creating object of service window when its open
@@ -20,12 +21,10 @@ def open_service_window(request):
        #creating object of service window when its open if its already oppen closing it and then opening a new one
        ServiceWindow.objects.filter(status='open').update(status='close')
        Service_Window=ServiceWindow.objects.create(
-            date = now().date(),
+            date =localtime(now()).date(),
             status='open'
             )
        return redirect('order-list')
-
-       
 
 
 #open_service_window checks if a window is open at the moment someone
@@ -37,19 +36,45 @@ def open_service_window(request):
 #Show the correct button text (Open New Service vs already running)
 #open_service_window → runs ONCE, when the admin clicks the button
 #order_list → runs EVERY TIME the dashboard page loads/refreshes
-def order_list(request):
-    querysetorderwindow=ServiceWindow.objects.filter(status='open').first()
-    queryset = Order.objects.all()
-    querysetpending=Order.objects.filter(order_status='pending').count()
-    querysetconfirmed_count=Order.objects.filter(order_status='confirmed').count()
-    querysetdelivered_count=Order.objects.filter(order_status='delivered').count()
-# To retrieve all objects from a database table in Django, you use the all()
-#  method on your model's default objects manager. This returns a QuerySet containing all database records as model instances
-    return render(request,'orders/order_list.html',{'orders':queryset,'pending_count': querysetpending,'confirmed_count':querysetconfirmed_count,
-    'delivered_count': querysetdelivered_count,'service_window':querysetorderwindow})
-#make my queryset available in the template under the name orders
-#Queryset = the result of asking your database a question
 
+
+def order_list(request):
+   context=get_dashboard_context(request)
+  #method on your model's default objects manager. This returns a QuerySet containing all database records as model instances
+   return render(request,'orders/order_list.html',context)
+
+def kfc_rider_list(request):
+   context=get_dashboard_context(request)
+   confirmed_orders = Order.objects.filter(payment_status='confirmed', service_window=context['service_window'])
+   #"Give me orders where service_window_id matches the ID of whichever ServiceWindow row currently has status='open'"
+   print("DEBUG - confirmed orders found:", confirmed_orders)
+   context['kfc_orders'] = confirmed_orders #adding a new dictionary with already added dictionaries into the mix
+   return render(request,'orders/order_list.html',context)
+
+
+#Each Django view runs independently with no memory of other views. 
+#since kfc_order_list renders the same template as order_list, it needs the same base data (orders, pending_count, service_window, etc.) or the page breaks.
+# it means it needs the same data as order list.
+#Fix: pulled the shared queries into get_dashboard_context(request), which returns a dictionary. 
+# Both views call it to get the base data, then add their own extra data on top — avoids duplicating queries in two places.
+def get_dashboard_context(request):
+   querysetorderwindow=ServiceWindow.objects.filter(status='open').first()
+   queryset = Order.objects.filter(service_window=querysetorderwindow)
+   #to show the data of only the current window
+    # To retrieve all objects from a database table in Django, you use the all()
+   querysetpending=Order.objects.filter(order_status='pending',service_window=querysetorderwindow).count()
+   querysetconfirmed_count=Order.objects.filter(order_status='confirmed',service_window=querysetorderwindow).count()
+   querysetdelivered_count=Order.objects.filter(order_status='delivered',service_window=querysetorderwindow).count()
+   return {
+        'orders': queryset,
+        'pending_count': querysetpending,
+        'confirmed_count': querysetconfirmed_count,
+        'delivered_count': querysetdelivered_count,
+        'service_window': querysetorderwindow,
+    }
+  #make my queryset available in the template under the name orders
+  #Queryset = the result of asking your database a question
+  
 
 #def update_order_status(request, order_id):
 #  get the order from database using order_id

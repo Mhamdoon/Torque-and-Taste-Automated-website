@@ -156,6 +156,53 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- NEW CODE FOR KFC ORDER LIST STARTS HERE
+             This is a separate section, further down the page, showing the compiled
+             list to send to the KFC manager. It's populated by kfc_orders, which only
+             exists in the context when this page was loaded via the kfc_rider_list view
+             (not the regular order_list view). That's why everything below is wrapped
+             in a check for kfc_orders - on a normal dashboard load, kfc_orders
+             won't exist in the context at all, so this whole block just won't render. -->
+        <div class="mt-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">KFC order list</h2>
+                <!-- This button POSTs to the kfc_rider_list view itself. Clicking it
+                     re-runs the whole view fresh, which means it always pulls the
+                     LATEST confirmed orders at the moment of the click - this was
+                     the "Option A" behavior you specifically asked for. -->
+                <form method="POST" action="{% url 'kfc-rider-list' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="text-sm bg-gray-800 text-white px-4 py-1.5 rounded-lg hover:bg-gray-700 transition-colors">
+                        Generate KFC List
+                    </button>
+                </form>
+            </div>
+
+            {% if kfc_orders %}
+                <div class="bg-white border border-gray-100 rounded-xl p-5">
+                    {% for order in kfc_orders %}
+                        <div class="pb-3 mb-3 border-b border-gray-100 last:border-b-0 last:mb-0 last:pb-0">
+                            <p class="text-sm font-semibold text-gray-800 mb-1">Order {{ order.order_number }} — {{ order.customer }}</p>
+                            <!-- order.orderitem_set.all() is the reverse ForeignKey lookup -
+                                 OrderItem points TO Order via a ForeignKey, so Django lets us
+                                 walk that relationship backwards from an Order object to get
+                                 every OrderItem that points at it. No extra query written here -
+                                 Django builds it from the model relationship automatically. -->
+                            <ul class="text-sm text-gray-600 space-y-0.5">
+                                {% for item in order.orderitem_set.all %}
+                                    <li>{{ item.menu_item }} × {{ item.quantity }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% empty %}
+                        <p class="text-sm text-gray-400">No confirmed orders yet for this service window.</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        <!-- NEW CODE FOR KFC ORDER LIST ENDS HERE -->
+
     </div>
 
 </body>
